@@ -4,25 +4,22 @@ using System.Text;
 using System.Windows.Forms;
 
 using con = System.Console;
-//TODO: Add word analyzer
-//TODO: Add inverse operator
 
 namespace cscon
 {
 	class Program
 	{
-		const int maxXCount = 512;
-		static List<Coset> X;
+		const int maxXCount = 500;
+		private static List<Coset> X;
+		private static int[][] G, H;
 		private static Coset activeNode;
 
 		static void Main(string[] args)
 		{
-			string[] Gword = { "aaa" };
-			string[] Hgenerator = { };
+			string[] Gwords = { "aa","bb", "abab"};
+			string[] Hgens = {"a","b" }; //TODO: PROBLEM WITH (-1,-1)
 
-			int[][] G = { new[] { 0, 0, 0, 0 } };
-			int[][] H = { new[] { 0, 0 } };
-			Coset.NumOp = 1;
+			TranslateGroupWords(Gwords, Hgens);
 			X = new List<Coset> { new Coset() };
 			activeNode = X[0];
 
@@ -49,54 +46,121 @@ namespace cscon
 			con.ReadKey();
 		}
 
+		private static void TranslateGroupWords(string[] Gwords, string[] Hgens)
+		{
+			Dictionary<char, int> opTable = new Dictionary<char, int>();
+
+			G = new int[Gwords.Length][];
+			int counter = 0;
+			for (int i = 0; i < Gwords.Length; i++)
+			{
+				var temp = Gwords[i].ToLower().ToCharArray();
+				for (int j = 0; j < temp.Length; j++)
+				{
+					if (!opTable.ContainsKey(temp[j]))
+						opTable.Add(temp[j], counter++);
+				}
+			}
+			Coset.NumOp = opTable.Count;
+
+			for (int i = 0; i < G.Length; i++)
+			{
+				G[i] = new int[Gwords[i].Length];
+				var temp = Gwords[i].ToCharArray();
+				var templower = Gwords[i].ToLower().ToCharArray();
+				for (int j = 0; j < temp.Length; j++)
+				{
+					char letter = temp[j];
+					G[i][j] = opTable.ContainsKey(letter) ? opTable[letter] : (opTable[templower[j]] + Coset.NumOp);
+				}
+			}
+
+			H = new int[Hgens.Length][];
+			for (int i = 0; i < H.Length; i++)
+			{
+				H[i] = new int[Hgens[i].Length];
+				var temp = Hgens[i].ToCharArray();
+				var templower = Hgens[i].ToLower().ToCharArray();
+				for (int j = 0; j < temp.Length; j++)
+				{
+					char letter = temp[j];
+					H[i][j] = opTable.ContainsKey(letter) ? opTable[letter] : (opTable[templower[j]] + Coset.NumOp);
+				}
+			}
+		}
+
 		private static void CompleteNode(int[][] Gx)
 		{
 			int workingIdx = activeNode.Idx;
 			con.WriteLine("Analyzing X" + workingIdx);
+			spaceF++;
 			//TODO: implement "Lookahead" checking procedure
 			for (int i = 0; i < Gx.Length; i++)
 			{
 				MakeDefinition(Gx[i]);
 				if (activeNode.Idx == -1)
 				{
-					pauser("Interrupt X" + workingIdx+ " because it was removed");
 					activeNode = X[0];
+					pauser("Interrupt X" + workingIdx + " because removal");
+					spaceF--;
 					return;
 				}
 			}
 			pauser("Complete X" + workingIdx);
+			spaceF--;
 		}
 
 		private static void MakeDefinition(int[] rel)
 		{
 			Coset prev = activeNode;
-			con.WriteLine("Checking path " + printOp(rel) + " from X" + activeNode.Idx);
+			con.WriteLine(" Checking path " + printOp(rel) + " from X" + activeNode.Idx);
+			spaceF++;
 
 			for (int i = 0; i < rel.Length; i++)
 			{
 				int curOp = rel[i];
-				//TODO: Add INVERSE operator handler
-				if (prev.Relations[curOp].To == null) //no existing path
+				Coset newNode;
+				if (curOp < Coset.NumOp)    //forward op
 				{
-					Coset newNode = new Coset();
+					if (prev.Relations[curOp].To == null) //no existing path
+					{
+						newNode = new Coset();
+						X.Add(newNode);
+						newNode.Relations[curOp].Back = prev;
+						prev.Relations[curOp].To = newNode;
+						pauser("X" + prev.Idx + " with Op" + curOp + " generated new node X" + newNode.Idx);
+						prev = newNode;
+						continue;
+					}
+					// existing path
+					prev = prev.Relations[curOp].To;
+					continue;
+				}
+				//inverse op
+				curOp -= Coset.NumOp;
+				if (prev.Relations[curOp].Back == null) //no existing path
+				{
+					newNode = new Coset();
 					X.Add(newNode);
-					newNode.Relations[curOp].Back = prev;
-					prev.Relations[curOp].To = newNode;
-					pauser("X" + prev.Idx + " with Op" + curOp + " generated new node X" + newNode.Idx);
+					newNode.Relations[curOp].To = prev;
+					prev.Relations[curOp].Back = newNode;
+					pauser("X" + prev.Idx + " with Op" + (curOp + Coset.NumOp) + " generated new node X" + newNode.Idx);
 					prev = newNode;
 					continue;
 				}
 				// existing path
-				prev = prev.Relations[curOp].To;
+				prev = prev.Relations[curOp].Back;
 			}
 
 			MergeNode(prev, activeNode);
+			spaceF--;
 		}
 
 		private static void MergeNode(Coset source, Coset target)
 		{
 			if (source == target || source == null || target == null)
 				return;
+			spaceF++;
 			pauser("Conflict: merging X" + source.Idx + " into X" + target.Idx);
 			for (int i = 0; i < Coset.NumOp; i++)
 			{
@@ -132,6 +196,7 @@ namespace cscon
 			X.Remove(source);
 			pauser("Removed X" + source.Idx);
 			source.Invalidate();
+			spaceF--;
 		}
 
 		class Coset
@@ -169,13 +234,14 @@ namespace cscon
 			public Coset Back;
 			public override string ToString()
 			{
-				return $"To {To?.Idx.ToString() ?? "None"}, From {Back?.Idx.ToString() ?? "None"}";
+				return $"{To?.Idx.ToString() ?? "None"},{Back?.Idx.ToString() ?? "None"}";
 			}
 		}
 
+		private static int spaceF = 0;
 		static void pauser(string info)
 		{
-			con.WriteLine(info);
+			con.WriteLine("{0," + spaceF + "}{1}", "", info);
 			return;
 			while (true)
 			{
@@ -209,7 +275,6 @@ namespace cscon
 			StringBuilder st = new StringBuilder();
 			for (int i = 0; i < op.Length; i++)
 				st.Append(op[i]);
-
 			return st.ToString();
 		}
 	}
