@@ -5,7 +5,7 @@ using System.Windows.Forms;
 
 using con = System.Console;
 //TODO: Add word analyzer
-//TODO: Adding inverse operator
+//TODO: Add inverse operator
 
 namespace cscon
 {
