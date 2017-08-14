@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using con = System.Console;
 //TODO: Add word analyzer
 //TODO: Add inverse operator
+
 namespace cscon
 {
 	class Program
