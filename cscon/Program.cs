@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Windows.Forms;
 
 using con = System.Console;
 
@@ -9,15 +8,15 @@ namespace cscon
 {
 	class Program
 	{
-		const int maxXCount = 500;
+		const int maxXCount = 100;
 		private static List<Coset> X;
 		private static int[][] G, H;
 		private static Coset activeNode;
 
 		static void Main(string[] args)
 		{
-			string[] Gwords = { "aa","bb", "abab"};
-			string[] Hgens = {"a","b" }; //TODO: PROBLEM WITH (-1,-1)
+			string[] Gwords = { "aaa" };
+			string[] Hgens = { "a"};
 
 			TranslateGroupWords(Gwords, Hgens);
 			X = new List<Coset> { new Coset() };
@@ -158,45 +157,63 @@ namespace cscon
 
 		private static void MergeNode(Coset source, Coset target)
 		{
-			if (source == target || source==null || target==null)
+			if (source == target || IsInvalid(source) || IsInvalid(target))
 				return;
 			spaceF++;
 			pauser("Conflict: merging X" + source.Idx + " into X" + target.Idx);
+			Coset[] sTo = new Coset[Coset.NumOp];
+			Coset[] sBack = new Coset[Coset.NumOp];
+			Coset[] tTo = new Coset[Coset.NumOp];
+			Coset[] tBack = new Coset[Coset.NumOp];
 			for (int i = 0; i < Coset.NumOp; i++)
 			{
 				//cut off connection and form template
-				Coset sTo = source.Relations[i].To;
-				Coset sBack = source.Relations[i].Back;
-				Coset tTo = target.Relations[i].To;
-				Coset tBack = target.Relations[i].Back;
+				sTo[i] = source.Relations[i].To;
+				sBack[i] = source.Relations[i].Back;
+				tTo[i] = target.Relations[i].To;
+				tBack[i] = target.Relations[i].Back;
 
-				source.Relations[i].To = null;
-				source.Relations[i].Back = null;
-				if (sTo != null)
+//				source.Relations[i].To = null;
+//				source.Relations[i].Back = null;
+				if (sTo[i] != null)
 				{
-					sTo.Relations[i].Back = null;
-					if (tTo == null)
-					{
-						target.Relations[i].To = sTo;
-						sTo.Relations[i].Back = target;
-					}
+					sTo[i].Relations[i].Back = null;
 				}
-				if (sBack != null)
+				if (sBack[i] != null)
 				{
-					sBack.Relations[i].To = null;
-					if (tBack == null)
-					{
-						target.Relations[i].Back = sBack;
-						sBack.Relations[i].To = target;
-					}
+					sBack[i].Relations[i].To = null;
 				}
-				pauser($"Cached relations Op{i} for X{source.Idx}({sBack?.Idx.ToString() ?? "-"},{sTo?.Idx.ToString()??"-"}) and X{target.Idx}({tBack?.Idx.ToString() ?? "-"},{tTo?.Idx.ToString() ?? "-"})");
-				MergeNode(sTo, target.Relations[i].To);
-				MergeNode(sBack, target.Relations[i].Back);
+				//				pauser($"Cached relations Op{i} for X{source.Idx}({sBack?.Idx.ToString() ?? "-"},{sTo?.Idx.ToString()??"-"}) and X{target.Idx}({tBack?.Idx.ToString() ?? "-"},{tTo?.Idx.ToString() ?? "-"})");
 			}
 			X.Remove(source);
-			pauser("Removed X" + source.Idx);
+			pauser("Removed X" + source);
 			source.Invalidate();
+			for (int i = 0; i < Coset.NumOp; i++)
+			{
+//				MergeNode(sTo[i], target.Relations[i].To);
+//				MergeNode(sBack[i], target.Relations[i].Back);
+				MergeNode(sTo[i], tTo[i]);
+				MergeNode(sBack[i], tBack[i]);
+			}
+			for (int i = 0; i < Coset.NumOp; i++)
+			{
+				if (IsInvalid(tTo[i]))
+				{
+					target.Relations[i].To = sTo[i];
+					if (sTo[i] != null)
+						sTo[i].Relations[i].Back = target;
+				}
+				if (IsInvalid(tBack[i]))
+				{
+					target.Relations[i].Back = sBack[i];
+					if (sBack[i] != null)
+						sBack[i].Relations[i].To = target;
+				}
+//				if (tTo[i] != null)
+//					target.Relations[i].To = tTo[i];
+//				if (tBack[i] != null)
+//					target.Relations[i].Back = tBack[i];
+			}
 			spaceF--;
 		}
 
