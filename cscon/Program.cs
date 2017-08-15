@@ -158,7 +158,7 @@ namespace cscon
 
 		private static void MergeNode(Coset source, Coset target)
 		{
-			if (source == target || source == null || target == null)
+			if (source == target || source==null || target==null)
 				return;
 			spaceF++;
 			pauser("Conflict: merging X" + source.Idx + " into X" + target.Idx);
@@ -190,6 +190,7 @@ namespace cscon
 						sBack.Relations[i].To = target;
 					}
 				}
+				pauser($"Cached relations Op{i} for X{source.Idx}({sBack?.Idx.ToString() ?? "-"},{sTo?.Idx.ToString()??"-"}) and X{target.Idx}({tBack?.Idx.ToString() ?? "-"},{tTo?.Idx.ToString() ?? "-"})");
 				MergeNode(sTo, target.Relations[i].To);
 				MergeNode(sBack, target.Relations[i].Back);
 			}
@@ -197,6 +198,11 @@ namespace cscon
 			pauser("Removed X" + source.Idx);
 			source.Invalidate();
 			spaceF--;
+		}
+
+		static bool IsInvalid(Coset t)
+		{
+			return t == null || t.Idx == -1;
 		}
 
 		class Coset
@@ -234,7 +240,7 @@ namespace cscon
 			public Coset Back;
 			public override string ToString()
 			{
-				return $"{To?.Idx.ToString() ?? "None"},{Back?.Idx.ToString() ?? "None"}";
+				return $"{Back?.Idx.ToString() ?? "--"},{To?.Idx.ToString() ?? "--"}";
 			}
 		}
 
@@ -242,7 +248,7 @@ namespace cscon
 		static void pauser(string info)
 		{
 			con.WriteLine("{0," + spaceF + "}{1}", "", info);
-			return;
+//			return;
 			while (true)
 			{
 				var k = con.ReadKey(true);
@@ -255,13 +261,7 @@ namespace cscon
 					case 'x':
 						con.ForegroundColor = ConsoleColor.Cyan;
 						for (int i = 0; i < X.Count; i++)
-						{
-
 							con.WriteLine("X" + X[i]);
-						}
-						break;
-					case 'a':
-						con.WriteLine(activeNode.Idx);
 						break;
 					default:
 						return;
