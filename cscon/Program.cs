@@ -8,31 +8,29 @@ namespace cscon
 {
 	class Program
 	{
-		const int maxXCount = 100;
+		const int maxXCount = 2000;
 		private static List<Coset> X;
 		private static int[][] G, H;
 		private static Coset activeNode;
 
 		static void Main(string[] args)
 		{
-			string[] Gwords = { "aaa" };
-			string[] Hgens = { "a"};
+			string[] Gwords = { "aaBABA","bbBABA" };
+			string[] Hgens = {};
 
 			TranslateGroupWords(Gwords, Hgens);
 			X = new List<Coset> { new Coset() };
 			activeNode = X[0];
 
-			List<int[]> tmp = new List<int[]>(G);
-			tmp.AddRange(H);
+			List<int[]> tmp = new List<int[]>(H);
+			tmp.AddRange(G);
 			CompleteNode(tmp.ToArray());
-			int pos = X.IndexOf(activeNode);
-			activeNode = (pos == X.Count - 1) ? null : X[pos + 1];
 
 			con.WriteLine("Entering main procedure");
 			while (activeNode != null && X.Count < maxXCount)
 			{
 				CompleteNode(G);
-				pos = X.IndexOf(activeNode);
+				int pos = X.IndexOf(activeNode);
 				activeNode = (pos == X.Count - 1) ? null : X[pos + 1];
 			}
 
@@ -127,7 +125,7 @@ namespace cscon
 						X.Add(newNode);
 						newNode.Relations[curOp].Back = prev;
 						prev.Relations[curOp].To = newNode;
-						pauser("X" + prev.Idx + " with Op" + curOp + " generated new node X" + newNode.Idx);
+						pauser("X" + prev.Idx + " with Op" + curOp + " generated X" + newNode.Idx);
 						prev = newNode;
 						continue;
 					}
@@ -143,7 +141,7 @@ namespace cscon
 					X.Add(newNode);
 					newNode.Relations[curOp].To = prev;
 					prev.Relations[curOp].Back = newNode;
-					pauser("X" + prev.Idx + " with Op" + (curOp + Coset.NumOp) + " generated new node X" + newNode.Idx);
+					pauser("X" + prev.Idx + " with Op" + (curOp + Coset.NumOp) + " generated X" + newNode.Idx);
 					prev = newNode;
 					continue;
 				}
@@ -165,6 +163,9 @@ namespace cscon
 			Coset[] sBack = new Coset[Coset.NumOp];
 			Coset[] tTo = new Coset[Coset.NumOp];
 			Coset[] tBack = new Coset[Coset.NumOp];
+			X.Remove(source);
+			pauser("Removed X" + source);
+			source.Invalidate();
 			for (int i = 0; i < Coset.NumOp; i++)
 			{
 				//cut off connection and form template
@@ -183,36 +184,33 @@ namespace cscon
 				{
 					sBack[i].Relations[i].To = null;
 				}
-				//				pauser($"Cached relations Op{i} for X{source.Idx}({sBack?.Idx.ToString() ?? "-"},{sTo?.Idx.ToString()??"-"}) and X{target.Idx}({tBack?.Idx.ToString() ?? "-"},{tTo?.Idx.ToString() ?? "-"})");
-			}
-			X.Remove(source);
-			pauser("Removed X" + source);
-			source.Invalidate();
-			for (int i = 0; i < Coset.NumOp; i++)
-			{
-//				MergeNode(sTo[i], target.Relations[i].To);
-//				MergeNode(sBack[i], target.Relations[i].Back);
-				MergeNode(sTo[i], tTo[i]);
-				MergeNode(sBack[i], tBack[i]);
 			}
 			for (int i = 0; i < Coset.NumOp; i++)
 			{
-				if (IsInvalid(tTo[i]))
+				if (IsInvalid(tTo[i])&& sTo[i] != null)
 				{
 					target.Relations[i].To = sTo[i];
-					if (sTo[i] != null)
+//					if (sTo[i] != null)
 						sTo[i].Relations[i].Back = target;
 				}
-				if (IsInvalid(tBack[i]))
+				if (tTo[i]==source)
+					target.Relations[i].To = target;
+
+				if (IsInvalid(tBack[i])&& sBack[i] != null)
 				{
 					target.Relations[i].Back = sBack[i];
-					if (sBack[i] != null)
+//					if (sBack[i] != null)
 						sBack[i].Relations[i].To = target;
 				}
-//				if (tTo[i] != null)
-//					target.Relations[i].To = tTo[i];
-//				if (tBack[i] != null)
-//					target.Relations[i].Back = tBack[i];
+				if (tBack[i]==source)
+					target.Relations[i].Back = target;
+			}
+			for (int i = 0; i < Coset.NumOp; i++)
+			{
+				MergeNode(sTo[i], target.Relations[i].To);
+				MergeNode(sBack[i], target.Relations[i].Back);
+//				MergeNode(sTo[i], tTo[i]);
+//				MergeNode(sBack[i], tBack[i]);
 			}
 			spaceF--;
 		}
@@ -265,7 +263,7 @@ namespace cscon
 		static void pauser(string info)
 		{
 			con.WriteLine("{0," + spaceF + "}{1}", "", info);
-//			return;
+			return;
 			while (true)
 			{
 				var k = con.ReadKey(true);
