@@ -8,15 +8,15 @@ namespace cscon
 {
 	class Program
 	{
-		const int maxXCount = 2000;
+		const int maxXCount = 5000;
 		private static List<Coset> X;
 		private static int[][] G, H;
 		private static Coset activeNode;
 
 		static void Main(string[] args)
 		{
-			string[] Gwords = { "aaBABA","bbBABA" };
-			string[] Hgens = {};
+			string[] Gwords = { "aa","bb","abababab","cc","acac","bcbcbc"};//,"dd","adad","acac","bdbd","cdcdcd" };
+			string[] Hgens = {"b","c"};
 
 			TranslateGroupWords(Gwords, Hgens);
 			X = new List<Coset> { new Coset() };
@@ -110,7 +110,7 @@ namespace cscon
 		private static void MakeDefinition(int[] rel)
 		{
 			Coset prev = activeNode;
-			con.WriteLine(" Checking path " + printOp(rel) + " from X" + activeNode.Idx);
+//			con.WriteLine(" Checking path " + printOp(rel) + " from X" + activeNode.Idx);
 			spaceF++;
 
 			for (int i = 0; i < rel.Length; i++)
@@ -174,8 +174,6 @@ namespace cscon
 				tTo[i] = target.Relations[i].To;
 				tBack[i] = target.Relations[i].Back;
 
-//				source.Relations[i].To = null;
-//				source.Relations[i].Back = null;
 				if (sTo[i] != null)
 				{
 					sTo[i].Relations[i].Back = null;
@@ -184,9 +182,7 @@ namespace cscon
 				{
 					sBack[i].Relations[i].To = null;
 				}
-			}
-			for (int i = 0; i < Coset.NumOp; i++)
-			{
+
 				if (IsInvalid(tTo[i])&& sTo[i] != null)
 				{
 					target.Relations[i].To = sTo[i];
@@ -209,8 +205,6 @@ namespace cscon
 			{
 				MergeNode(sTo[i], target.Relations[i].To);
 				MergeNode(sBack[i], target.Relations[i].Back);
-//				MergeNode(sTo[i], tTo[i]);
-//				MergeNode(sBack[i], tBack[i]);
 			}
 			spaceF--;
 		}
@@ -262,6 +256,7 @@ namespace cscon
 		private static int spaceF = 0;
 		static void pauser(string info)
 		{
+			return;
 			con.WriteLine("{0," + spaceF + "}{1}", "", info);
 			return;
 			while (true)
