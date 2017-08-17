@@ -15,8 +15,8 @@ namespace cscon
 
 		static void Main(string[] args)
 		{
-			string[] Gwords = { "aa","bb","abababab","cc","acac","bcbcbc"};//,"dd","adad","acac","bdbd","cdcdcd" };
-			string[] Hgens = {"b","c"};
+			string[] Gwords = { "aa","bb","ababab","cc","acac","bcbcbcbc","dd","adad","acac","bdbd","cdcdcd" };
+			string[] Hgens = {"a","b","d"};
 
 			TranslateGroupWords(Gwords, Hgens);
 			X = new List<Coset> { new Coset() };
@@ -119,7 +119,7 @@ namespace cscon
 				Coset newNode;
 				if (curOp < Coset.NumOp)    //forward op
 				{
-					if (prev.Relations[curOp].To == null) //no existing path
+					if (IsInvalid(prev.Relations[curOp].To)) //no existing path
 					{
 						newNode = new Coset();
 						X.Add(newNode);
@@ -135,7 +135,7 @@ namespace cscon
 				}
 				//inverse op
 				curOp -= Coset.NumOp;
-				if (prev.Relations[curOp].Back == null) //no existing path
+				if (IsInvalid(prev.Relations[curOp].Back)) //no existing path
 				{
 					newNode = new Coset();
 					X.Add(newNode);
@@ -163,6 +163,7 @@ namespace cscon
 			Coset[] sBack = new Coset[Coset.NumOp];
 			Coset[] tTo = new Coset[Coset.NumOp];
 			Coset[] tBack = new Coset[Coset.NumOp];
+
 			X.Remove(source);
 			pauser("Removed X" + source);
 			source.Invalidate();
